@@ -1,0 +1,17 @@
+# Visual Studio files
+.vs/
+.vscode/
+*.suo
+*.user
+
+# Build output
+bin/
+obj/
+
+# NuGet Packages
+*.nupkg
+packages/
+
+# Ignore other temporary files
+*.log
+*.tmp
