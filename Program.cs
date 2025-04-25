@@ -1,5 +1,8 @@
+using FinanceManagement.Data;
 using FinanceManagement.Data.Models;
 using FinanceManagement.DbSql;
+using FinanceManagement.Repositories.Implementation;
+using FinanceManagement.Repositories.Interface;
 using FinanceTool.Repositories.Implementation;
 using FinanceTool.Repositories.Interface;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -8,7 +11,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
-using SendGrid.Extensions.DependencyInjection; // Add this for AddSendGrid
+using SendGrid.Extensions.DependencyInjection;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -44,8 +47,12 @@ builder.Services.Configure<IdentityOptions>(options =>
 
 builder.Services.AddControllers();
 
+
 // Register Repositories
 builder.Services.AddScoped<IDepartementRepository, DepartementRepository>();
+
+builder.Services.AddScoped<EmailService>();
+
 
 // Add SendGrid
 builder.Services.AddSendGrid(options =>
@@ -120,6 +127,22 @@ builder.Services.AddCors(options =>
 });
 
 var app = builder.Build();
+
+// Seed the Admin user and roles
+using (var scope = app.Services.CreateScope())
+{
+    var services = scope.ServiceProvider;
+    try
+    {
+        await DataSeeder.SeedAdminUser(services);
+    }
+    catch (Exception ex)
+    {
+        // Log the error (you can use a logging framework like Serilog or the built-in ILogger)
+        var logger = services.GetRequiredService<ILogger<Program>>();
+        logger.LogError(ex, "An error occurred while seeding the database.");
+    }
+}
 
 app.UseSwagger();
 app.UseSwaggerUI(c =>

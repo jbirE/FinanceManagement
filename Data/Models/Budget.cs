@@ -11,12 +11,9 @@ public class Budget
     [Range(0.01, double.MaxValue)]
     public double MontantTotal { get; set; }
     [Range(0, double.MaxValue)]
-    public double MontantDepense { get; set; } = 0;
-    [ForeignKey("Departement")]
-    public int DepartementId { get; set; }
-    public Departement Departement { get; set; }
+  
 
-    [ForeignKey("Projet")]
+     [ForeignKey("Projet")]
     public int? ProjetId { get; set; }
     [JsonIgnore]
 public Projet Projet { get; set; }

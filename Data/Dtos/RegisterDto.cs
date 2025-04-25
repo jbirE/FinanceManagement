@@ -9,6 +9,10 @@
         public string Cin { get; set; }
         public string Email { get; set; }
         public string PhoneNumber { get; set; }
-        public string Role { get; set; } // Role can be "Financier", "Employee", or "DepartmentManager"
+        public string Password { get; set; }
+        public int DepartementId { get; set; }
+        public DateTime dateEmbauche { get; set; }
+
+
     }
 }

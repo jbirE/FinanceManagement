@@ -5,9 +5,7 @@ using System.ComponentModel.DataAnnotations;
 namespace FinanceManagement.Data.Models
 {
 
-
-
-public partial class Departement
+public  class Departement
 {
         [Key]
 
@@ -17,11 +15,8 @@ public partial class Departement
 
     public double BudgetTotal { get; set; }
 
+   public virtual ICollection<Projet> Projets { get; set; }
+  public virtual ICollection<Utilisateur> Utilisateurs { get; set; }
 
-
-    public virtual ICollection<Budget> Budgets { get; set; } = new List<Budget>();
-
-    public virtual ICollection<Projet> Projets { get; set; } = new List<Projet>();
-
-}
+    }
 }

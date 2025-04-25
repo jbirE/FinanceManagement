@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace FinanceManagement.Migrations
 {
     [DbContext(typeof(DataContext))]
-    [Migration("20250406153352_model")]
-    partial class model
+    [Migration("20250419122215_test1")]
+    partial class test1
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -39,9 +39,6 @@ namespace FinanceManagement.Migrations
                     b.Property<DateTime>("DateFinProjet")
                         .HasColumnType("datetime2");
 
-                    b.Property<int>("DepartementId")
-                        .HasColumnType("int");
-
                     b.Property<double>("MontantDepense")
                         .HasColumnType("float");
 
@@ -52,8 +49,6 @@ namespace FinanceManagement.Migrations
                         .HasColumnType("int");
 
                     b.HasKey("IdBudget");
-
-                    b.HasIndex("DepartementId");
 
                     b.HasIndex("ProjetId");
 
@@ -78,6 +73,38 @@ namespace FinanceManagement.Migrations
                     b.HasKey("IdDepartement");
 
                     b.ToTable("Departements");
+
+                    b.HasData(
+                        new
+                        {
+                            IdDepartement = 1,
+                            BudgetTotal = 0.0,
+                            Name = "TAX"
+                        },
+                        new
+                        {
+                            IdDepartement = 2,
+                            BudgetTotal = 0.0,
+                            Name = "Assurance"
+                        },
+                        new
+                        {
+                            IdDepartement = 3,
+                            BudgetTotal = 0.0,
+                            Name = "CBS"
+                        },
+                        new
+                        {
+                            IdDepartement = 4,
+                            BudgetTotal = 0.0,
+                            Name = "Consulting"
+                        },
+                        new
+                        {
+                            IdDepartement = 5,
+                            BudgetTotal = 0.0,
+                            Name = "Strategy & Transactions"
+                        });
                 });
 
             modelBuilder.Entity("FinanceManagement.Data.Models.Facture", b =>
@@ -133,18 +160,15 @@ namespace FinanceManagement.Migrations
 
                     b.Property<string>("DestinataireId")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("nvarchar(450)");
 
                     b.Property<string>("Message")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("UtilisateurId")
-                        .HasColumnType("nvarchar(450)");
-
                     b.HasKey("IdNotif");
 
-                    b.HasIndex("UtilisateurId");
+                    b.HasIndex("DestinataireId");
 
                     b.ToTable("Notifications");
                 });
@@ -252,12 +276,18 @@ namespace FinanceManagement.Migrations
                         .IsConcurrencyToken()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<DateTime>("DerniereConnexion")
+                        .HasColumnType("datetime2");
+
                     b.Property<string>("Email")
                         .HasMaxLength(256)
                         .HasColumnType("nvarchar(256)");
 
                     b.Property<bool>("EmailConfirmed")
                         .HasColumnType("bit");
+
+                    b.Property<int>("IdDepartement")
+                        .HasColumnType("int");
 
                     b.Property<bool>("LockoutEnabled")
                         .HasColumnType("bit");
@@ -293,6 +323,9 @@ namespace FinanceManagement.Migrations
                     b.Property<string>("SecurityStamp")
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<bool>("Status")
+                        .HasColumnType("bit");
+
                     b.Property<bool>("TwoFactorEnabled")
                         .HasColumnType("bit");
 
@@ -300,7 +333,12 @@ namespace FinanceManagement.Migrations
                         .HasMaxLength(256)
                         .HasColumnType("nvarchar(256)");
 
+                    b.Property<DateTime>("dateEmbauche")
+                        .HasColumnType("datetime2");
+
                     b.HasKey("Id");
+
+                    b.HasIndex("IdDepartement");
 
                     b.HasIndex("NormalizedEmail")
                         .HasDatabaseName("EmailIndex");
@@ -342,25 +380,25 @@ namespace FinanceManagement.Migrations
                     b.HasData(
                         new
                         {
-                            Id = "46cd7dfe-0608-452d-92b0-ecc1a417e134",
+                            Id = "3727fcb5-2d5a-4faa-8167-b2438b43bb7c",
                             Name = "Admin",
                             NormalizedName = "ADMIN"
                         },
                         new
                         {
-                            Id = "d4c6b01b-00e1-4990-8171-05321582155c",
+                            Id = "8bbcfaaf-ff18-4914-a039-46264555627a",
                             Name = "DepartementManger",
                             NormalizedName = "DepartementManger"
                         },
                         new
                         {
-                            Id = "679224ad-b9fd-4eba-8b99-e3080da52e7a",
+                            Id = "52482f3e-09c9-4f7f-be2d-fd51aaa58a6f",
                             Name = "Financier",
                             NormalizedName = "Financier"
                         },
                         new
                         {
-                            Id = "0d08bec8-536c-4bac-a17a-a7fc8447b2c7",
+                            Id = "294fc16f-571b-4f2b-9409-a58aae9db3c4",
                             Name = "Employe",
                             NormalizedName = "Employe"
                         });
@@ -474,17 +512,9 @@ namespace FinanceManagement.Migrations
 
             modelBuilder.Entity("FinanceManagement.Data.Models.Budget", b =>
                 {
-                    b.HasOne("FinanceManagement.Data.Models.Departement", "Departement")
-                        .WithMany("Budgets")
-                        .HasForeignKey("DepartementId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
                     b.HasOne("FinanceManagement.Data.Models.Projet", "Projet")
                         .WithMany("Budgets")
                         .HasForeignKey("ProjetId");
-
-                    b.Navigation("Departement");
 
                     b.Navigation("Projet");
                 });
@@ -502,9 +532,13 @@ namespace FinanceManagement.Migrations
 
             modelBuilder.Entity("FinanceManagement.Data.Models.Notification", b =>
                 {
-                    b.HasOne("FinanceManagement.Data.Models.Utilisateur", null)
+                    b.HasOne("FinanceManagement.Data.Models.Utilisateur", "Destinataire")
                         .WithMany("Notifications")
-                        .HasForeignKey("UtilisateurId");
+                        .HasForeignKey("DestinataireId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Destinataire");
                 });
 
             modelBuilder.Entity("FinanceManagement.Data.Models.Projet", b =>
@@ -547,6 +581,17 @@ namespace FinanceManagement.Migrations
                     b.Navigation("Projet");
 
                     b.Navigation("Utilisateur");
+                });
+
+            modelBuilder.Entity("FinanceManagement.Data.Models.Utilisateur", b =>
+                {
+                    b.HasOne("FinanceManagement.Data.Models.Departement", "Departement")
+                        .WithMany("Utilisateurs")
+                        .HasForeignKey("IdDepartement")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Departement");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
@@ -607,9 +652,9 @@ namespace FinanceManagement.Migrations
 
             modelBuilder.Entity("FinanceManagement.Data.Models.Departement", b =>
                 {
-                    b.Navigation("Budgets");
-
                     b.Navigation("Projets");
+
+                    b.Navigation("Utilisateurs");
                 });
 
             modelBuilder.Entity("FinanceManagement.Data.Models.Projet", b =>
