@@ -1,55 +1,122 @@
 ﻿using FinanceManagement.Data.Dtos;
-using FinanceTool.Repositories.Interface;
+using FinanceManagement.Services;
 using Microsoft.AspNetCore.Mvc;
 
 namespace FinanceManagement.Controllers
 {
-    
+    [Route("api/[controller]")]
+    [ApiController]
+    public class DepartementsController : ControllerBase
+    {
+        private readonly DepartementService _departementService;
 
-        [ApiController]
-        [Route("api/[controller]")]
-        public class DepartementsController : ControllerBase
+        public DepartementsController(DepartementService departementService)
         {
-            private readonly IDepartementRepository _departementRepository;
+            _departementService = departementService;
+        }
 
-            public DepartementsController(IDepartementRepository departementRepository)
+        // GET: api/Departements
+        [HttpGet("GetDepartements")]
+        public async Task<ActionResult<IEnumerable<DepartementDTO>>> GetDepartements()
+        {
+            var departements = await _departementService.GetAllDepartementsAsync();
+            return Ok(departements);
+        }
+
+        // GET: api/Departements/5
+        [HttpGet("GetDepartements/{id}")]
+        public async Task<ActionResult<DepartementDTO>> GetDepartement(int id)
+        {
+            var departement = await _departementService.GetDepartementByIdAsync(id);
+
+            if (departement == null)
             {
-                _departementRepository = departementRepository;
+                return NotFound();
             }
 
-            [HttpGet("getAlldepartement")]
-            public async Task<ActionResult<IEnumerable<DepartementDto>>> GetAllDepartements()
+            return Ok(departement);
+        }
+
+        // GET: api/Departements/5/details
+        [HttpGet("GetDepartementWithDetails/{id}/details")]
+        public async Task<ActionResult<DepartementDTO>> GetDepartementWithDetails(int id)
+        {
+            var departement = await _departementService.GetDepartementWithDetailsAsync(id);
+
+            if (departement == null)
             {
-                var departements = await _departementRepository.GetAllDepartementsAsync();
-                return Ok(departements);
+                return NotFound();
             }
 
-            [HttpPost("ajouterDepartement")]
-            public async Task<ActionResult> AddDepartement(DepartementDto departementDto)
+            return Ok(departement);
+        }
+
+        // POST: api/Departements
+        [HttpPost("CreateDepartement")]
+        public async Task<ActionResult<DepartementDTO>> CreateDepartement(CreateDepartementDTO departementDto)
+        {
+            try
             {
-                var createdDepartement = await _departementRepository.AddDepartementAsync(departementDto);
-                return Ok(createdDepartement);
+                var createdDepartement = await _departementService.CreateDepartementAsync(departementDto);
+                return CreatedAtAction(nameof(GetDepartement), new { id = createdDepartement.IdDepartement }, createdDepartement);
             }
-
-            [HttpPut("updateDepartement/{id}")]
-            public async Task<ActionResult> UpdateDepartement(int id, DepartementDto departementDto)
+            catch (InvalidOperationException ex)
             {
-                var updatedDepartement = await _departementRepository.UpdateDepartementAsync(id, departementDto);
-                if (updatedDepartement == null) return NotFound(new { Message = "Departement not found" });
+                return BadRequest(ex.Message);
+            }
+        }
 
+        // PUT: api/Departements/
+        [HttpPut("UpdateDepartement/{id}")]
+        public async Task<IActionResult> UpdateDepartement(int id, UpdateDepartementDTO departementDto)
+        {
+            try
+            {
+                if (!await _departementService.DepartementExistsAsync(id))
+                {
+                    return NotFound();
+                }
+
+                var updatedDepartement = await _departementService.UpdateDepartementAsync(id, departementDto);
                 return Ok(updatedDepartement);
             }
-
-            [HttpDelete("supprimerDepartement/{id}")]
-            public async Task<ActionResult> DeleteDepartement(int id)
+            catch (KeyNotFoundException ex)
             {
-                var result = await _departementRepository.DeleteDepartementAsync(id);
-                if (!result) return NotFound(new { Message = "Departement not found" });
-
-                return Ok(new { Message = "Departement deleted successfully" });
+                return NotFound(ex.Message);
             }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
 
-      
-        
+        // DELETE: api/Departements/5
+        [HttpDelete("DeleteDepartement/{id}")]
+        public async Task<IActionResult> DeleteDepartement(int id)
+        {
+            try
+            {
+                await _departementService.DeleteDepartementAsync(id);
+                return NoContent();
+            }
+            catch (KeyNotFoundException)
+            {
+                return NotFound();
+            }
+        }
+
+        // GET: api/Departements/exists/5
+        [HttpGet("DepartementExists/{id}")]
+        public async Task<ActionResult<bool>> DepartementExists(int id)
+        {
+            return await _departementService.DepartementExistsAsync(id);
+        }
+
+        // GET: api/Departements/name-exists
+        [HttpGet("name-exists")]
+        public async Task<ActionResult<bool>> DepartementNameExists([FromQuery] string name)
+        {
+            return await _departementService.DepartementNameExistsAsync(name);
+        }
     }
-    }
+}

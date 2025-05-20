@@ -1,8 +1,8 @@
 ﻿using FinanceManagement.Data.Dtos;
 using FinanceManagement.Data.Models;
 using FinanceManagement.DbSql;
-using FinanceManagement.Repositories.Implementation;
 using FinanceManagement.Repositories.Interface;
+using FinanceManagement.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -23,14 +23,13 @@ namespace FinanceManagement.Controllers
         private readonly RoleManager<IdentityRole> roleManager;
         private readonly IConfiguration config;
         private readonly DataContext dbContext;
-        private readonly EmailService _emailService ;
-
+        private readonly EmailService _emailService;
 
         public AuthentificationController(
             UserManager<Utilisateur> userManager,
             RoleManager<IdentityRole> roleManager,
             IConfiguration configuration,
-            DataContext dbContext ,
+            DataContext dbContext,
             EmailService emailService)
         {
             this.userManager = userManager;
@@ -38,14 +37,15 @@ namespace FinanceManagement.Controllers
             config = configuration;
             this.dbContext = dbContext;
             this._emailService = emailService;
-
         }
-
 
         [HttpGet("Departements")]
         public async Task<ActionResult<IEnumerable<Departement>>> GetDepartements()
         {
             var departements = await dbContext.Departements.ToListAsync();
+            // ajouter une fonction GetDepartements dans un service departement
+            // injection unetOfWork pour acceder à departementRepository 
+            // var depart... = await _departementService.getDepartements()
             return Ok(departements);
         }
 
@@ -72,9 +72,7 @@ namespace FinanceManagement.Controllers
             }
 
             var user = new Utilisateur
-
             {
-                
                 UserName = userDto.Username,
                 Nom = userDto.Nom,
                 Prenom = userDto.Prenom,
@@ -82,116 +80,128 @@ namespace FinanceManagement.Controllers
                 Cin = userDto.Cin,
                 Email = userDto.Email,
                 PhoneNumber = userDto.PhoneNumber,
-                dateEmbauche = userDto.dateEmbauche,
+                DateEmbauche = userDto.dateEmbauche,
                 DerniereConnexion = userDto.DerniereConnexion,
-                Status = false,
-                IdDepartement = userDto.IdDepartement
+                Status = false, // User is inactive until password is changed
+                IdDepartement = userDto.IdDepartement,
+                PasswordChanged = false // Ensure this is set to false
             };
 
             var result = await userManager.CreateAsync(user, userDto.Password);
 
-            string mailBody = $"Welcome to our Platform ! We're thrilled to have you on board.\r\n\r\n" +
-                     $"Here are your login credentials:\r\n\r\n" +
-                     $"Your Email : {userDto.Email}\r\n" +
-                     $"Password: {userDto.Password}\r\n\r\n" +
-                     $"Please log in using the link below:\r\n\r\n" +
-                     $"[ Application.com.tn]";
-
+            string mailBody = $"Welcome to our Platform! We're thrilled to have you on board.\r\n\r\n" +
+                             $"Here are your login credentials:\r\n\r\n" +
+                             $"Your Email: {userDto.Email}\r\n" +
+                             $"Password: {userDto.Password}\r\n\r\n" +
+                             $"Please log in using the link below and change your password to activate your account:\r\n\r\n" +
+                             $"[Application.com.tn]";
 
             if (result.Succeeded)
             {
                 var roleResult = await userManager.AddToRoleAsync(user, userDto.role);
+                if (!roleResult.Succeeded)
+                {
+                    return BadRequest(new { Message = "Failed to assign role.", Errors = roleResult.Errors });
+                }
+
+                // Generate JWT token
+                var roles = await userManager.GetRolesAsync(user);
+                var token = GenerateToken(user, roles.ToList());
 
                 await _emailService.SendEmailAsync(userDto.Email, mailBody, userDto.Password);
 
-
-                if (!roleResult.Succeeded)
+                return Ok(new
                 {
-                    return BadRequest(new { Message = "Failed to assign Financier role.", Errors = roleResult.Errors });
-                }
-                return Ok(new { Message = "user created successfully" });
-            }
-            return BadRequest(new { Message = "Financier creation failed", Errors = result.Errors });
-        }
-        
-        // Admin-only endpoint to register Admin users
-        [HttpPost("AjouterAdmin")]
-        public async Task<ActionResult<RegisterDto>> AjouterAdmin([FromForm] RegisterDto userDto)
-        {
-            // Validate password
-            if (!IsValidPassword(userDto.Password))
-            {
-                return BadRequest(new { Message = "Password must be at least 8 characters long, contain at least one number, and one special character." });
-            }
-
-            if (userManager.Users.Any(u => u.Email == userDto.Email))
-            {
-                return BadRequest(new { Message = "Email already exists." });
-            }
-            if (userManager.Users.Any(u => u.UserName == userDto.Username))
-            {
-                return BadRequest(new { Message = "Username already exists." });
-            }
-
-            var user = new Utilisateur
-            {
-                UserName = userDto.Username,
-                Nom = userDto.Nom,
-                Prenom = userDto.Prenom,
-                Addresse = userDto.Addresse,
-                Cin = userDto.Cin,
-                Email = userDto.Email,
-                PhoneNumber = userDto.PhoneNumber,
-            };
-
-            var result = await userManager.CreateAsync(user, userDto.Password);
-
-            if (result.Succeeded)
-            {
-                var roleResult = await userManager.AddToRoleAsync(user, "Admin");
-                if (!roleResult.Succeeded)
-                {
-                    return BadRequest(new { Message = "Failed to assign Admin role.", Errors = roleResult.Errors });
-                }
-                return Ok(new { Message = "Admin user registered successfully" });
+                    Message = "User created successfully. Please log in and change your password to activate your account.",
+                    Token = token,
+                    Email = user.Email,
+                    Role = userDto.role,
+                    Username = user.UserName
+                });
             }
             return BadRequest(new { Message = "User creation failed", Errors = result.Errors });
         }
 
-        // Password validation method
-        private bool IsValidPassword(string password)
-        {
-            if (string.IsNullOrEmpty(password) || password.Length < 8)
-                return false;
-
-            // Check for at least one number and one special character
-            var hasNumber = new Regex(@"[0-9]+");
-            var hasSpecialChar = new Regex(@"[!@#$%^&*(),.?""{}|<>]+");
-
-            return hasNumber.IsMatch(password) && hasSpecialChar.IsMatch(password);
-        }
-
+        
         [HttpPost("Login")]
         public async Task<IActionResult> Login([FromBody] LoginModel model)
         {
             var user = await userManager.FindByEmailAsync(model.Email);
             if (user == null)
             {
-                return Unauthorized(); // Invalid email
+                return Unauthorized(new { Message = "Invalid email or password." });
             }
 
             var result = await userManager.CheckPasswordAsync(user, model.Password);
             if (!result)
             {
-                return Unauthorized(); // Invalid password
+                return Unauthorized(new { Message = "Invalid email or password." });
             }
-            var roles = await userManager.GetRolesAsync(user);
-            Console.WriteLine($"Roles for user {user.UserName}: {string.Join(", ", roles)}");
 
-            var token = GenerateToken(user, roles.ToList());
+            // Check if the user needs to change their password
+            if (!user.PasswordChanged)
+            {
+                var roles = await userManager.GetRolesAsync(user);
+                var token = GenerateToken(user, roles.ToList());
+                return Ok(new
+                {
+                    Message = "First login detected. Please change your password to activate your account.",
+                    MustChangePassword = true,
+                    Token = token,
+                    Email = user.Email,
+                    Username = user.UserName,
+                    Role = roles.Any() ? roles.First() : "No role assigned"
+                });
+            }
 
-            var roleToReturn = roles.Any() ? roles.First() : "No role assigned";
-            return Ok(new { Token = token, Email = user.Email, Role = roleToReturn, Username = user.UserName });
+            // If password has been changed, proceed with normal login
+            var userRoles = await userManager.GetRolesAsync(user);
+            Console.WriteLine($"Roles for user {user.UserName}: {string.Join(", ", userRoles)}");
+
+            var loginToken = GenerateToken(user, userRoles.ToList());
+
+            return Ok(new
+            {
+                Token = loginToken,
+                Email = user.Email,
+                Role = userRoles.Any() ? userRoles.First() : "No role assigned",
+                Username = user.UserName
+            });
+        }
+
+        [HttpPost("ChangePassword")]
+       // [Authorize] // Ensure the user is authenticated
+        public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordDto model)
+        {
+            if (model == null || string.IsNullOrWhiteSpace(model.OldPassword) || string.IsNullOrWhiteSpace(model.NewPassword))
+            {
+                return BadRequest(new { Message = "Old and new passwords are required." });
+            }
+
+            if (!IsValidPassword(model.NewPassword))
+            {
+                return BadRequest(new { Message = "New password must be at least 8 characters long, contain at least one number, and one special character." });
+            }
+
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var user = await userManager.FindByIdAsync(userId);
+            if (user == null)
+            {
+                return NotFound(new { Message = "User not found." });
+            }
+
+            var result = await userManager.ChangePasswordAsync(user, model.OldPassword, model.NewPassword);
+            if (!result.Succeeded)
+            {
+                return BadRequest(new { Message = "Password change failed", Errors = result.Errors });
+            }
+
+            // Update PasswordChanged and Status
+            user.PasswordChanged = true;
+            user.Status = true; // Activate the user
+            await userManager.UpdateAsync(user);
+
+            return Ok(new { Message = "Password changed successfully. Your account is now active." });
         }
 
         private string GenerateToken(Utilisateur user, IList<string> roles)
@@ -221,12 +231,13 @@ namespace FinanceManagement.Controllers
         }
 
         [HttpGet("user-info")]
+       // [Authorize]
         public async Task<ActionResult<UserDto>> GetCurrentUserInfo()
         {
             var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
             var currentUser = await userManager.Users
-                .Include(u => u.Departement) 
+                .Include(u => u.Departement)
                 .FirstOrDefaultAsync(u => u.Id == currentUserId);
 
             if (currentUser == null)
@@ -244,11 +255,12 @@ namespace FinanceManagement.Controllers
                 Addresse = currentUser.Addresse,
                 Email = currentUser.Email,
                 PhoneNumber = currentUser.PhoneNumber,
-                DepartementNom = currentUser.Departement?.Name
+                // DepartementNom = currentUser.Departement?.Name
             };
 
             return Ok(userInfoDto);
         }
+        //getallusers
 
         [HttpPost("forgot-password")]
         public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordDto model)
@@ -281,7 +293,26 @@ namespace FinanceManagement.Controllers
                 return BadRequest(new { Message = "Password reset failed", Errors = result.Errors });
             }
 
+            // Update PasswordChanged and Status if this is the first password reset
+            if (!user.PasswordChanged)
+            {
+                user.PasswordChanged = true;
+                user.Status = true; // Activate the user
+                await userManager.UpdateAsync(user);
+            }
+
             return Ok(new { Message = "Password has been reset successfully." });
+        }
+
+        private bool IsValidPassword(string password)
+        {
+            if (string.IsNullOrEmpty(password) || password.Length < 8)
+                return false;
+
+            var hasNumber = new Regex(@"[0-9]+");
+            var hasSpecialChar = new Regex(@"[!@#$%^&*(),.?""{}|<>]+");
+
+            return hasNumber.IsMatch(password) && hasSpecialChar.IsMatch(password);
         }
     }
 }

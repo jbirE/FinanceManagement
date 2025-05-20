@@ -8,7 +8,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace FinanceManagement.Migrations
 {
     /// <inheritdoc />
-    public partial class test1 : Migration
+    public partial class finapp : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -34,6 +34,7 @@ namespace FinanceManagement.Migrations
                     IdDepartement = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
                     Name = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Region = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     BudgetTotal = table.Column<double>(type: "float", nullable: false)
                 },
                 constraints: table =>
@@ -74,6 +75,9 @@ namespace FinanceManagement.Migrations
                     dateEmbauche = table.Column<DateTime>(type: "datetime2", nullable: false),
                     DerniereConnexion = table.Column<DateTime>(type: "datetime2", nullable: false),
                     Status = table.Column<bool>(type: "bit", nullable: false),
+                    PasswordChanged = table.Column<bool>(type: "bit", nullable: false),
+                    ResetPasswordToken = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    ResetPasswordTokenExpiry = table.Column<DateTime>(type: "datetime2", nullable: true),
                     IdDepartement = table.Column<int>(type: "int", nullable: false),
                     UserName = table.Column<string>(type: "nvarchar(256)", maxLength: 256, nullable: true),
                     NormalizedUserName = table.Column<string>(type: "nvarchar(256)", maxLength: 256, nullable: true),
@@ -96,6 +100,27 @@ namespace FinanceManagement.Migrations
                     table.ForeignKey(
                         name: "FK_AspNetUsers_Departements_IdDepartement",
                         column: x => x.IdDepartement,
+                        principalTable: "Departements",
+                        principalColumn: "IdDepartement");
+                });
+
+            migrationBuilder.CreateTable(
+                name: "BudgetsDepartements",
+                columns: table => new
+                {
+                    IdBudgetDepartement = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    MontantAnnuel = table.Column<double>(type: "float", nullable: false),
+                    Annee = table.Column<int>(type: "int", nullable: false),
+                    DepartementId = table.Column<int>(type: "int", nullable: false),
+                    DateCreation = table.Column<DateTime>(type: "datetime2", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_BudgetsDepartements", x => x.IdBudgetDepartement);
+                    table.ForeignKey(
+                        name: "FK_BudgetsDepartements_Departements_DepartementId",
+                        column: x => x.DepartementId,
                         principalTable: "Departements",
                         principalColumn: "IdDepartement",
                         onDelete: ReferentialAction.Cascade);
@@ -227,7 +252,8 @@ namespace FinanceManagement.Migrations
                         name: "FK_Projets_AspNetUsers_ResponsableId",
                         column: x => x.ResponsableId,
                         principalTable: "AspNetUsers",
-                        principalColumn: "Id");
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.SetNull);
                     table.ForeignKey(
                         name: "FK_Projets_Departements_DepartementId",
                         column: x => x.DepartementId,
@@ -237,29 +263,36 @@ namespace FinanceManagement.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "Budgets",
+                name: "BudgetsProjets",
                 columns: table => new
                 {
-                    IdBudget = table.Column<int>(type: "int", nullable: false)
+                    IdBudgetProjet = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
-                    MontantTotal = table.Column<double>(type: "float", nullable: false),
-                    MontantDepense = table.Column<double>(type: "float", nullable: false),
-                    ProjetId = table.Column<int>(type: "int", nullable: true),
+                    MontantAlloue = table.Column<double>(type: "float", nullable: false),
+                    DepensesTotales = table.Column<double>(type: "float", nullable: false),
                     DateCreation = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    DateFinProjet = table.Column<DateTime>(type: "datetime2", nullable: false)
+                    DateFinProjet = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    ProjetId = table.Column<int>(type: "int", nullable: false),
+                    UtilisateurId = table.Column<string>(type: "nvarchar(450)", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_Budgets", x => x.IdBudget);
+                    table.PrimaryKey("PK_BudgetsProjets", x => x.IdBudgetProjet);
                     table.ForeignKey(
-                        name: "FK_Budgets_Projets_ProjetId",
+                        name: "FK_BudgetsProjets_AspNetUsers_UtilisateurId",
+                        column: x => x.UtilisateurId,
+                        principalTable: "AspNetUsers",
+                        principalColumn: "Id");
+                    table.ForeignKey(
+                        name: "FK_BudgetsProjets_Projets_ProjetId",
                         column: x => x.ProjetId,
                         principalTable: "Projets",
-                        principalColumn: "IdProjet");
+                        principalColumn: "IdProjet",
+                        onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateTable(
-                name: "RapportDepenses",
+                name: "RapportsDepenses",
                 columns: table => new
                 {
                     IdRpport = table.Column<int>(type: "int", nullable: false)
@@ -268,31 +301,25 @@ namespace FinanceManagement.Migrations
                     DateSoumission = table.Column<DateTime>(type: "datetime2", nullable: false),
                     StatutApprobation = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     Description = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    BudgetId = table.Column<int>(type: "int", nullable: false),
-                    ProjetId = table.Column<int>(type: "int", nullable: true),
+                    BudgetProjetId = table.Column<int>(type: "int", nullable: false),
                     UtilisateurId = table.Column<string>(type: "nvarchar(450)", nullable: false),
                     ExpenseCategory = table.Column<string>(type: "nvarchar(max)", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_RapportDepenses", x => x.IdRpport);
+                    table.PrimaryKey("PK_RapportsDepenses", x => x.IdRpport);
                     table.ForeignKey(
-                        name: "FK_RapportDepenses_AspNetUsers_UtilisateurId",
+                        name: "FK_RapportsDepenses_AspNetUsers_UtilisateurId",
                         column: x => x.UtilisateurId,
                         principalTable: "AspNetUsers",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
-                        name: "FK_RapportDepenses_Budgets_BudgetId",
-                        column: x => x.BudgetId,
-                        principalTable: "Budgets",
-                        principalColumn: "IdBudget",
+                        name: "FK_RapportsDepenses_BudgetsProjets_BudgetProjetId",
+                        column: x => x.BudgetProjetId,
+                        principalTable: "BudgetsProjets",
+                        principalColumn: "IdBudgetProjet",
                         onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
-                        name: "FK_RapportDepenses_Projets_ProjetId",
-                        column: x => x.ProjetId,
-                        principalTable: "Projets",
-                        principalColumn: "IdProjet");
                 });
 
             migrationBuilder.CreateTable(
@@ -313,9 +340,9 @@ namespace FinanceManagement.Migrations
                 {
                     table.PrimaryKey("PK_Factures", x => x.IdFacture);
                     table.ForeignKey(
-                        name: "FK_Factures_RapportDepenses_RapportDepenseId",
+                        name: "FK_Factures_RapportsDepenses_RapportDepenseId",
                         column: x => x.RapportDepenseId,
-                        principalTable: "RapportDepenses",
+                        principalTable: "RapportsDepenses",
                         principalColumn: "IdRpport",
                         onDelete: ReferentialAction.Cascade);
                 });
@@ -325,22 +352,10 @@ namespace FinanceManagement.Migrations
                 columns: new[] { "Id", "ConcurrencyStamp", "Name", "NormalizedName" },
                 values: new object[,]
                 {
-                    { "294fc16f-571b-4f2b-9409-a58aae9db3c4", null, "Employe", "Employe" },
-                    { "3727fcb5-2d5a-4faa-8167-b2438b43bb7c", null, "Admin", "ADMIN" },
-                    { "52482f3e-09c9-4f7f-be2d-fd51aaa58a6f", null, "Financier", "Financier" },
-                    { "8bbcfaaf-ff18-4914-a039-46264555627a", null, "DepartementManger", "DepartementManger" }
-                });
-
-            migrationBuilder.InsertData(
-                table: "Departements",
-                columns: new[] { "IdDepartement", "BudgetTotal", "Name" },
-                values: new object[,]
-                {
-                    { 1, 0.0, "TAX" },
-                    { 2, 0.0, "Assurance" },
-                    { 3, 0.0, "CBS" },
-                    { 4, 0.0, "Consulting" },
-                    { 5, 0.0, "Strategy & Transactions" }
+                    { "96e024e0-c843-4f39-92f1-fbaf9486de0e", null, "DepartementManager", "DepartementManager" },
+                    { "a2e1b3c5-c840-4890-a492-f7dbf6985f07", null, "Employe", "Employe" },
+                    { "aae6857e-795a-47d9-be59-3a9beb9a00d3", null, "Financier", "Financier" },
+                    { "d067ef9b-47a8-46fc-9287-9e767c92d621", null, "Admin", "ADMIN" }
                 });
 
             migrationBuilder.CreateIndex(
@@ -388,9 +403,19 @@ namespace FinanceManagement.Migrations
                 filter: "[NormalizedUserName] IS NOT NULL");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Budgets_ProjetId",
-                table: "Budgets",
+                name: "IX_BudgetsDepartements_DepartementId",
+                table: "BudgetsDepartements",
+                column: "DepartementId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_BudgetsProjets_ProjetId",
+                table: "BudgetsProjets",
                 column: "ProjetId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_BudgetsProjets_UtilisateurId",
+                table: "BudgetsProjets",
+                column: "UtilisateurId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Factures_RapportDepenseId",
@@ -413,18 +438,13 @@ namespace FinanceManagement.Migrations
                 column: "ResponsableId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_RapportDepenses_BudgetId",
-                table: "RapportDepenses",
-                column: "BudgetId");
+                name: "IX_RapportsDepenses_BudgetProjetId",
+                table: "RapportsDepenses",
+                column: "BudgetProjetId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_RapportDepenses_ProjetId",
-                table: "RapportDepenses",
-                column: "ProjetId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_RapportDepenses_UtilisateurId",
-                table: "RapportDepenses",
+                name: "IX_RapportsDepenses_UtilisateurId",
+                table: "RapportsDepenses",
                 column: "UtilisateurId");
         }
 
@@ -447,6 +467,9 @@ namespace FinanceManagement.Migrations
                 name: "AspNetUserTokens");
 
             migrationBuilder.DropTable(
+                name: "BudgetsDepartements");
+
+            migrationBuilder.DropTable(
                 name: "Factures");
 
             migrationBuilder.DropTable(
@@ -456,10 +479,10 @@ namespace FinanceManagement.Migrations
                 name: "AspNetRoles");
 
             migrationBuilder.DropTable(
-                name: "RapportDepenses");
+                name: "RapportsDepenses");
 
             migrationBuilder.DropTable(
-                name: "Budgets");
+                name: "BudgetsProjets");
 
             migrationBuilder.DropTable(
                 name: "Projets");

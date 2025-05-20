@@ -18,8 +18,8 @@ namespace FinanceManagement.DbSql
             },
             new IdentityRole
             {
-                Name = "DepartementManger",
-                NormalizedName = "DepartementManger"
+                Name = "DepartementManager",
+                NormalizedName = "DepartementManager"
             },
             new IdentityRole
             {

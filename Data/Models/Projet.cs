@@ -1,45 +1,24 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
-namespace FinanceManagement.Data.Models
+namespace FinanceManagement.Data.Models;
+
+public class Projet
 {
-
-
-
-public partial class Projet
-{
-        [Key]
+    [Key]
     public int IdProjet { get; set; }
     public string Nom { get; set; }
     public DateTime DateDebut { get; set; }
 
-
-   public double BudgetAlloue { get; set; }
-  public virtual ICollection<Budget> Budgets { get; set; } = new List<Budget>();
-
-
+    public virtual ICollection<BudgetProjet> BudgetsProjets { get; set; } = new List<BudgetProjet>();
 
     public DateTime? DateFin { get; set; }
 
+    [ForeignKey("Departement")]
+    public int DepartementId { get; set; }
+    public virtual Departement Departement { get; set; }
 
-
-        [ForeignKey("Departement")]
-        public int DepartementId { get; set; }
-        public virtual Departement Departement { get; set; }
-
-
-
-
-
-        [ForeignKey("Utilisateur")]
-        public string? ResponsableId { get; set; }
-        public Utilisateur Responsable { get; set; }
-
-
-        public ICollection<RapportDepense> Rapports { get; set; }
-
-
-    }
+    [ForeignKey("Utilisateur")]
+    public string? ResponsableId { get; set; }
+    public Utilisateur Responsable { get; set; }
 }

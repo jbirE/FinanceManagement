@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace FinanceManagement.Migrations
 {
     [DbContext(typeof(DataContext))]
-    [Migration("20250419122215_test1")]
-    partial class test1
+    [Migration("20250516213253_testbuget")]
+    partial class testbuget
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -25,13 +25,40 @@ namespace FinanceManagement.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
-            modelBuilder.Entity("FinanceManagement.Data.Models.Budget", b =>
+            modelBuilder.Entity("FinanceManagement.Data.Models.BudgetDepartement", b =>
                 {
-                    b.Property<int>("IdBudget")
+                    b.Property<int>("IdBudgetDepartement")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("IdBudget"));
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("IdBudgetDepartement"));
+
+                    b.Property<int>("Annee")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("DateCreation")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("DepartementId")
+                        .HasColumnType("int");
+
+                    b.Property<double>("MontantAnnuel")
+                        .HasColumnType("float");
+
+                    b.HasKey("IdBudgetDepartement");
+
+                    b.HasIndex("DepartementId");
+
+                    b.ToTable("BudgetsDepartements");
+                });
+
+            modelBuilder.Entity("FinanceManagement.Data.Models.BudgetProjet", b =>
+                {
+                    b.Property<int>("IdBudgetProjet")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("IdBudgetProjet"));
 
                     b.Property<DateTime>("DateCreation")
                         .HasColumnType("datetime2");
@@ -39,20 +66,26 @@ namespace FinanceManagement.Migrations
                     b.Property<DateTime>("DateFinProjet")
                         .HasColumnType("datetime2");
 
-                    b.Property<double>("MontantDepense")
+                    b.Property<double>("DepensesTotales")
                         .HasColumnType("float");
 
-                    b.Property<double>("MontantTotal")
+                    b.Property<double>("MontantAlloue")
                         .HasColumnType("float");
 
-                    b.Property<int?>("ProjetId")
+                    b.Property<int>("ProjetId")
                         .HasColumnType("int");
 
-                    b.HasKey("IdBudget");
+                    b.Property<string>("UtilisateurId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("IdBudgetProjet");
 
                     b.HasIndex("ProjetId");
 
-                    b.ToTable("Budgets");
+                    b.HasIndex("UtilisateurId");
+
+                    b.ToTable("BudgetsProjets");
                 });
 
             modelBuilder.Entity("FinanceManagement.Data.Models.Departement", b =>
@@ -63,48 +96,16 @@ namespace FinanceManagement.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("IdDepartement"));
 
-                    b.Property<double>("BudgetTotal")
-                        .HasColumnType("float");
-
                     b.Property<string>("Name")
                         .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Region")
                         .HasColumnType("nvarchar(max)");
 
                     b.HasKey("IdDepartement");
 
                     b.ToTable("Departements");
-
-                    b.HasData(
-                        new
-                        {
-                            IdDepartement = 1,
-                            BudgetTotal = 0.0,
-                            Name = "TAX"
-                        },
-                        new
-                        {
-                            IdDepartement = 2,
-                            BudgetTotal = 0.0,
-                            Name = "Assurance"
-                        },
-                        new
-                        {
-                            IdDepartement = 3,
-                            BudgetTotal = 0.0,
-                            Name = "CBS"
-                        },
-                        new
-                        {
-                            IdDepartement = 4,
-                            BudgetTotal = 0.0,
-                            Name = "Consulting"
-                        },
-                        new
-                        {
-                            IdDepartement = 5,
-                            BudgetTotal = 0.0,
-                            Name = "Strategy & Transactions"
-                        });
                 });
 
             modelBuilder.Entity("FinanceManagement.Data.Models.Facture", b =>
@@ -155,14 +156,21 @@ namespace FinanceManagement.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("IdNotif"));
 
-                    b.Property<DateTime>("DateEnvoi")
+                    b.Property<DateTime>("DateCreation")
                         .HasColumnType("datetime2");
 
                     b.Property<string>("DestinataireId")
                         .IsRequired()
                         .HasColumnType("nvarchar(450)");
 
+                    b.Property<bool>("IsReaded")
+                        .HasColumnType("bit");
+
                     b.Property<string>("Message")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Titre")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
@@ -180,9 +188,6 @@ namespace FinanceManagement.Migrations
                         .HasColumnType("int");
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("IdProjet"));
-
-                    b.Property<double>("BudgetAlloue")
-                        .HasColumnType("float");
 
                     b.Property<DateTime>("DateDebut")
                         .HasColumnType("datetime2");
@@ -217,7 +222,7 @@ namespace FinanceManagement.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("IdRpport"));
 
-                    b.Property<int>("BudgetId")
+                    b.Property<int>("BudgetProjetId")
                         .HasColumnType("int");
 
                     b.Property<DateTime>("DateSoumission")
@@ -227,15 +232,8 @@ namespace FinanceManagement.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("ExpenseCategory")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
                     b.Property<double>("Montant")
                         .HasColumnType("float");
-
-                    b.Property<int?>("ProjetId")
-                        .HasColumnType("int");
 
                     b.Property<string>("StatutApprobation")
                         .IsRequired()
@@ -247,108 +245,11 @@ namespace FinanceManagement.Migrations
 
                     b.HasKey("IdRpport");
 
-                    b.HasIndex("BudgetId");
-
-                    b.HasIndex("ProjetId");
+                    b.HasIndex("BudgetProjetId");
 
                     b.HasIndex("UtilisateurId");
 
                     b.ToTable("RapportDepenses");
-                });
-
-            modelBuilder.Entity("FinanceManagement.Data.Models.Utilisateur", b =>
-                {
-                    b.Property<string>("Id")
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<int>("AccessFailedCount")
-                        .HasColumnType("int");
-
-                    b.Property<string>("Addresse")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Cin")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("ConcurrencyStamp")
-                        .IsConcurrencyToken()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime>("DerniereConnexion")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("Email")
-                        .HasMaxLength(256)
-                        .HasColumnType("nvarchar(256)");
-
-                    b.Property<bool>("EmailConfirmed")
-                        .HasColumnType("bit");
-
-                    b.Property<int>("IdDepartement")
-                        .HasColumnType("int");
-
-                    b.Property<bool>("LockoutEnabled")
-                        .HasColumnType("bit");
-
-                    b.Property<DateTimeOffset?>("LockoutEnd")
-                        .HasColumnType("datetimeoffset");
-
-                    b.Property<string>("Nom")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("NormalizedEmail")
-                        .HasMaxLength(256)
-                        .HasColumnType("nvarchar(256)");
-
-                    b.Property<string>("NormalizedUserName")
-                        .HasMaxLength(256)
-                        .HasColumnType("nvarchar(256)");
-
-                    b.Property<string>("PasswordHash")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("PhoneNumber")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<bool>("PhoneNumberConfirmed")
-                        .HasColumnType("bit");
-
-                    b.Property<string>("Prenom")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("SecurityStamp")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<bool>("Status")
-                        .HasColumnType("bit");
-
-                    b.Property<bool>("TwoFactorEnabled")
-                        .HasColumnType("bit");
-
-                    b.Property<string>("UserName")
-                        .HasMaxLength(256)
-                        .HasColumnType("nvarchar(256)");
-
-                    b.Property<DateTime>("dateEmbauche")
-                        .HasColumnType("datetime2");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("IdDepartement");
-
-                    b.HasIndex("NormalizedEmail")
-                        .HasDatabaseName("EmailIndex");
-
-                    b.HasIndex("NormalizedUserName")
-                        .IsUnique()
-                        .HasDatabaseName("UserNameIndex")
-                        .HasFilter("[NormalizedUserName] IS NOT NULL");
-
-                    b.ToTable("AspNetUsers", (string)null);
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole", b =>
@@ -380,25 +281,25 @@ namespace FinanceManagement.Migrations
                     b.HasData(
                         new
                         {
-                            Id = "3727fcb5-2d5a-4faa-8167-b2438b43bb7c",
+                            Id = "162a97e2-a9dc-46df-ab8f-94a1f4e45607",
                             Name = "Admin",
                             NormalizedName = "ADMIN"
                         },
                         new
                         {
-                            Id = "8bbcfaaf-ff18-4914-a039-46264555627a",
-                            Name = "DepartementManger",
-                            NormalizedName = "DepartementManger"
+                            Id = "a0208ead-9beb-4c71-9339-d1639085e8c5",
+                            Name = "DepartementManager",
+                            NormalizedName = "DepartementManager"
                         },
                         new
                         {
-                            Id = "52482f3e-09c9-4f7f-be2d-fd51aaa58a6f",
+                            Id = "4ed50648-4672-43b8-bec3-594c842369e5",
                             Name = "Financier",
                             NormalizedName = "Financier"
                         },
                         new
                         {
-                            Id = "294fc16f-571b-4f2b-9409-a58aae9db3c4",
+                            Id = "b265e783-f9e1-460f-abbd-c0a122822496",
                             Name = "Employe",
                             NormalizedName = "Employe"
                         });
@@ -510,13 +411,138 @@ namespace FinanceManagement.Migrations
                     b.ToTable("AspNetUserTokens", (string)null);
                 });
 
-            modelBuilder.Entity("FinanceManagement.Data.Models.Budget", b =>
+            modelBuilder.Entity("Utilisateur", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<int>("AccessFailedCount")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Addresse")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Cin")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ConcurrencyStamp")
+                        .IsConcurrencyToken()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("DateEmbauche")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("DerniereConnexion")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Email")
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
+                    b.Property<bool>("EmailConfirmed")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("IdDepartement")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("LockoutEnabled")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTimeOffset?>("LockoutEnd")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("Nom")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("NormalizedEmail")
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
+                    b.Property<string>("NormalizedUserName")
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
+                    b.Property<bool>("PasswordChanged")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("PasswordHash")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("PhoneNumber")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("PhoneNumberConfirmed")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Prenom")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ResetPasswordToken")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("ResetPasswordTokenExpiry")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("SecurityStamp")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("Status")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("TwoFactorEnabled")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("UserName")
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("IdDepartement");
+
+                    b.HasIndex("NormalizedEmail")
+                        .HasDatabaseName("EmailIndex");
+
+                    b.HasIndex("NormalizedUserName")
+                        .IsUnique()
+                        .HasDatabaseName("UserNameIndex")
+                        .HasFilter("[NormalizedUserName] IS NOT NULL");
+
+                    b.ToTable("AspNetUsers", (string)null);
+                });
+
+            modelBuilder.Entity("FinanceManagement.Data.Models.BudgetDepartement", b =>
+                {
+                    b.HasOne("FinanceManagement.Data.Models.Departement", "Departement")
+                        .WithMany("BudgetsDepartements")
+                        .HasForeignKey("DepartementId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Departement");
+                });
+
+            modelBuilder.Entity("FinanceManagement.Data.Models.BudgetProjet", b =>
                 {
                     b.HasOne("FinanceManagement.Data.Models.Projet", "Projet")
-                        .WithMany("Budgets")
-                        .HasForeignKey("ProjetId");
+                        .WithMany("BudgetsProjets")
+                        .HasForeignKey("ProjetId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Utilisateur", "Utilisateur")
+                        .WithMany("BudgetsProjets")
+                        .HasForeignKey("UtilisateurId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
 
                     b.Navigation("Projet");
+
+                    b.Navigation("Utilisateur");
                 });
 
             modelBuilder.Entity("FinanceManagement.Data.Models.Facture", b =>
@@ -532,7 +558,7 @@ namespace FinanceManagement.Migrations
 
             modelBuilder.Entity("FinanceManagement.Data.Models.Notification", b =>
                 {
-                    b.HasOne("FinanceManagement.Data.Models.Utilisateur", "Destinataire")
+                    b.HasOne("Utilisateur", "Destinataire")
                         .WithMany("Notifications")
                         .HasForeignKey("DestinataireId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -549,9 +575,10 @@ namespace FinanceManagement.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("FinanceManagement.Data.Models.Utilisateur", "Responsable")
+                    b.HasOne("Utilisateur", "Responsable")
                         .WithMany()
-                        .HasForeignKey("ResponsableId");
+                        .HasForeignKey("ResponsableId")
+                        .OnDelete(DeleteBehavior.SetNull);
 
                     b.Navigation("Departement");
 
@@ -560,38 +587,21 @@ namespace FinanceManagement.Migrations
 
             modelBuilder.Entity("FinanceManagement.Data.Models.RapportDepense", b =>
                 {
-                    b.HasOne("FinanceManagement.Data.Models.Budget", "Budget")
+                    b.HasOne("FinanceManagement.Data.Models.BudgetProjet", "BudgetProjet")
                         .WithMany("Rapports")
-                        .HasForeignKey("BudgetId")
+                        .HasForeignKey("BudgetProjetId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("FinanceManagement.Data.Models.Projet", "Projet")
-                        .WithMany("Rapports")
-                        .HasForeignKey("ProjetId");
-
-                    b.HasOne("FinanceManagement.Data.Models.Utilisateur", "Utilisateur")
+                    b.HasOne("Utilisateur", "Utilisateur")
                         .WithMany("Rapports")
                         .HasForeignKey("UtilisateurId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("Budget");
-
-                    b.Navigation("Projet");
+                    b.Navigation("BudgetProjet");
 
                     b.Navigation("Utilisateur");
-                });
-
-            modelBuilder.Entity("FinanceManagement.Data.Models.Utilisateur", b =>
-                {
-                    b.HasOne("FinanceManagement.Data.Models.Departement", "Departement")
-                        .WithMany("Utilisateurs")
-                        .HasForeignKey("IdDepartement")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Departement");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
@@ -605,7 +615,7 @@ namespace FinanceManagement.Migrations
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserClaim<string>", b =>
                 {
-                    b.HasOne("FinanceManagement.Data.Models.Utilisateur", null)
+                    b.HasOne("Utilisateur", null)
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -614,7 +624,7 @@ namespace FinanceManagement.Migrations
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserLogin<string>", b =>
                 {
-                    b.HasOne("FinanceManagement.Data.Models.Utilisateur", null)
+                    b.HasOne("Utilisateur", null)
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -629,7 +639,7 @@ namespace FinanceManagement.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("FinanceManagement.Data.Models.Utilisateur", null)
+                    b.HasOne("Utilisateur", null)
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -638,20 +648,33 @@ namespace FinanceManagement.Migrations
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserToken<string>", b =>
                 {
-                    b.HasOne("FinanceManagement.Data.Models.Utilisateur", null)
+                    b.HasOne("Utilisateur", null)
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("FinanceManagement.Data.Models.Budget", b =>
+            modelBuilder.Entity("Utilisateur", b =>
+                {
+                    b.HasOne("FinanceManagement.Data.Models.Departement", "Departement")
+                        .WithMany("Utilisateurs")
+                        .HasForeignKey("IdDepartement")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.Navigation("Departement");
+                });
+
+            modelBuilder.Entity("FinanceManagement.Data.Models.BudgetProjet", b =>
                 {
                     b.Navigation("Rapports");
                 });
 
             modelBuilder.Entity("FinanceManagement.Data.Models.Departement", b =>
                 {
+                    b.Navigation("BudgetsDepartements");
+
                     b.Navigation("Projets");
 
                     b.Navigation("Utilisateurs");
@@ -659,9 +682,7 @@ namespace FinanceManagement.Migrations
 
             modelBuilder.Entity("FinanceManagement.Data.Models.Projet", b =>
                 {
-                    b.Navigation("Budgets");
-
-                    b.Navigation("Rapports");
+                    b.Navigation("BudgetsProjets");
                 });
 
             modelBuilder.Entity("FinanceManagement.Data.Models.RapportDepense", b =>
@@ -669,8 +690,10 @@ namespace FinanceManagement.Migrations
                     b.Navigation("Factures");
                 });
 
-            modelBuilder.Entity("FinanceManagement.Data.Models.Utilisateur", b =>
+            modelBuilder.Entity("Utilisateur", b =>
                 {
+                    b.Navigation("BudgetsProjets");
+
                     b.Navigation("Notifications");
 
                     b.Navigation("Rapports");

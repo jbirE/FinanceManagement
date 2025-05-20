@@ -1,11 +1,13 @@
-﻿namespace FinanceManagement.Data.Dtos
+﻿namespace FinanceManagement.Data.Dtos;
+
+public class DepartementDTO
 {
-    public class DepartementDto
-    {
+    public int IdDepartement { get; set; }
+    public string Name { get; set; }
+    public string Region { get; set; }
 
-        public int IdDepartement { get; set; }
-        public string Name { get; set; }
-        public double  BudgetTotal { get; set; }
-
-    }
+    // For returning related data when needed
+    public List<string> ProjetsNames { get; set; } = new List<string>();
+    public int NombreUtilisateurs { get; set; }
+    public double TotalBudget { get; set; }
 }

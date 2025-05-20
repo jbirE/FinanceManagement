@@ -1,18 +1,20 @@
 using FinanceManagement.Data;
-using FinanceManagement.Data.Models;
 using FinanceManagement.DbSql;
 using FinanceManagement.Repositories.Implementation;
 using FinanceManagement.Repositories.Interface;
-using FinanceTool.Repositories.Implementation;
+using FinanceManagement.Services;
+using FinanceManagement.SignalRjobs.Notification;
+using FinanceManagement.SignalRjobs.Hubs;
 using FinanceTool.Repositories.Interface;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using SendGrid.Extensions.DependencyInjection;
 using System.Text;
+using FinanceManagement.Repositories;
+using FinanceManagement.SignalRjobs;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -42,16 +44,46 @@ builder.Services.AddIdentity<Utilisateur, IdentityRole>()
 builder.Services.Configure<IdentityOptions>(options =>
 {
     options.User.RequireUniqueEmail = true;
-    options.SignIn.RequireConfirmedEmail = true; // Enforce email confirmation
+    options.SignIn.RequireConfirmedEmail = true;
 });
 
 builder.Services.AddControllers();
+builder.Services.AddSignalR();
 
+// Ajouter le provider
+builder.Services.AddSingleton<NotificationProvider>();
 
 // Register Repositories
 builder.Services.AddScoped<IDepartementRepository, DepartementRepository>();
-
 builder.Services.AddScoped<EmailService>();
+builder.Services.AddScoped<INotificationRepository, NotificationRepository>();
+builder.Services.AddScoped<IRapportDepenseRepository, RapportDepenseRepository>();
+builder.Services.AddScoped<IUtilisateurRepository, UtilisateurRepository>();
+builder.Services.AddScoped<IBudgetDepartementRepository, BudgetDepartementRepository>();
+builder.Services.AddScoped<IBudgetProjetRepository, BudgetProjetRepository>();
+
+
+
+// Register UnitOfWork
+builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
+
+// Register Services
+builder.Services.AddScoped<BudgetProjetService>();
+builder.Services.AddScoped<BudgetDepartementService>();
+
+builder.Services.AddScoped<ProjetService>();
+builder.Services.AddScoped<NotificationService>();
+builder.Services.AddScoped<ProjetService>();
+builder.Services.AddScoped<DepartementService>();
+builder.Services.AddScoped<UtilisateurService>();
+builder.Services.AddSignalR();
+
+
+
+
+
+
+
 
 
 // Add SendGrid
@@ -60,11 +92,7 @@ builder.Services.AddSendGrid(options =>
     options.ApiKey = config["SendGrid:ApiKey"];
 });
 
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
-
-// Add JWT authentication with your key and configure validation parameters
 builder.Services.AddSwaggerGen(options =>
 {
     options.SwaggerDoc("latest", new OpenApiInfo { Title = "API", Version = "latest" });
@@ -115,7 +143,6 @@ builder.Services.AddAuthentication(options =>
     };
 });
 
-// Cross Origin
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("NgOrigins", policy =>
@@ -128,39 +155,48 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
-// Seed the Admin user and roles
-using (var scope = app.Services.CreateScope())
+// Map the SignalR hub
+app.MapHub<WorkerHub>("/hubs/worker");
+
+// Only seed in development/production, not when running migrations
+if (!args.Contains("--no-seed"))
 {
-    var services = scope.ServiceProvider;
     try
     {
-        await DataSeeder.SeedAdminUser(services);
+        using (var scope = app.Services.CreateScope())
+        {
+            var services = scope.ServiceProvider;
+            await DataSeeder.SeedAdminUser(services);
+        }
     }
     catch (Exception ex)
     {
-        // Log the error (you can use a logging framework like Serilog or the built-in ILogger)
-        var logger = services.GetRequiredService<ILogger<Program>>();
-        logger.LogError(ex, "An error occurred while seeding the database.");
+        Console.WriteLine($"An error occurred while seeding the database: {ex.Message}");
+        // Continue with application startup even if seeding fails
     }
 }
 
-app.UseSwagger();
-app.UseSwaggerUI(c =>
-{
-    c.RoutePrefix = "swagger";
-    c.SwaggerEndpoint("/swagger/latest/swagger.json", "API latest");
-});
-
-app.UseCors("NgOrigins");
-app.UseRouting();
-
-// Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
-    app.UseSwaggerUI();
+    app.UseSwaggerUI(c =>
+    {
+        c.RoutePrefix = "swagger";
+        c.SwaggerEndpoint("/swagger/latest/swagger.json", "API latest");
+    });
+}
+else
+{
+    app.UseSwagger();
+    app.UseSwaggerUI(c =>
+    {
+        c.RoutePrefix = "swagger";
+        c.SwaggerEndpoint("/swagger/latest/swagger.json", "API latest");
+    });
 }
 
+app.UseCors("NgOrigins");
+app.UseRouting();
 app.UseAuthentication();
 app.UseHttpsRedirection();
 app.UseAuthorization();
