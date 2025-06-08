@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using FinanceManagement.Data.Enum;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace FinanceManagement.Data.Models;
@@ -21,4 +22,6 @@ public class Projet
     [ForeignKey("Utilisateur")]
     public string? ResponsableId { get; set; }
     public Utilisateur Responsable { get; set; }
+    [Required]
+    public ProjetStatus Status { get; set; }
 }

@@ -51,7 +51,7 @@ builder.Services.AddControllers();
 builder.Services.AddSignalR();
 
 // Ajouter le provider
-builder.Services.AddSingleton<NotificationProvider>();
+builder.Services.AddScoped<NotificationProvider>();
 
 // Register Repositories
 builder.Services.AddScoped<IDepartementRepository, DepartementRepository>();
@@ -62,7 +62,9 @@ builder.Services.AddScoped<IUtilisateurRepository, UtilisateurRepository>();
 builder.Services.AddScoped<IBudgetDepartementRepository, BudgetDepartementRepository>();
 builder.Services.AddScoped<IBudgetProjetRepository, BudgetProjetRepository>();
 
+builder.Services.AddScoped<IDashboardService, DashboardService>();
 
+builder.Services.AddScoped<IUserContext, UserContext>();
 
 // Register UnitOfWork
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
@@ -73,14 +75,11 @@ builder.Services.AddScoped<BudgetDepartementService>();
 
 builder.Services.AddScoped<ProjetService>();
 builder.Services.AddScoped<NotificationService>();
-builder.Services.AddScoped<ProjetService>();
 builder.Services.AddScoped<DepartementService>();
 builder.Services.AddScoped<UtilisateurService>();
 builder.Services.AddSignalR();
 
-
-
-
+builder.Services.AddScoped<NotificationProvider>();
 
 
 
@@ -147,17 +146,18 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("NgOrigins", policy =>
     {
-        policy.AllowAnyOrigin()
-            .AllowAnyMethod()
-            .AllowAnyHeader();
+        policy.WithOrigins("http://localhost:4200") 
+              .AllowAnyMethod()
+              .AllowAnyHeader()
+              .AllowCredentials(); 
     });
 });
 
+
 var app = builder.Build();
-
+app.UseCors("NgOrigins");
+app.MapHub<NotificationHub>("/ws");
 // Map the SignalR hub
-app.MapHub<WorkerHub>("/hubs/worker");
-
 // Only seed in development/production, not when running migrations
 if (!args.Contains("--no-seed"))
 {

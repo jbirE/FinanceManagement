@@ -54,7 +54,7 @@ namespace FinanceManagement.Services
             return MapToBudgetDepartementDto(budget, departement);
         }
 
-        public async Task<BudgetDepartementDto> CreateBudgetDepartementAsync(BudgetDepartement budgetDepartement)
+        public async Task<BudgetDepartementDto> CreateBudgetDepartementAsync(BudgetDepartementDto budgetDepartement)
         {
             var departement = await _unitOfWork.Departements.GetByIdAsync(budgetDepartement.DepartementId);
             if (departement == null)
@@ -65,22 +65,36 @@ namespace FinanceManagement.Services
             if (existingBudget.Any())
                 throw new InvalidOperationException("Un budget existe déjà pour ce département et cette année");
 
-            budgetDepartement.DateCreation = DateTime.UtcNow;
-            await _unitOfWork.BudgetsDepartements.AddAsync(budgetDepartement);
+            var newBudgetDepartement = new BudgetDepartement
+            {
+                DateCreation = DateTime.Now,
+                DepartementId = budgetDepartement.DepartementId,
+                Annee = budgetDepartement.Annee,
+                MontantAnnuel = budgetDepartement.MontantAnnuel
+            };
+
+            await _unitOfWork.BudgetsDepartements.AddAsync(newBudgetDepartement);
             await _unitOfWork.CompleteAsync();
 
-            await _notificationService.SendBudgetDepartementUpdatedNotificationAsync(budgetDepartement.IdBudgetDepartement);
-            return MapToBudgetDepartementDto(budgetDepartement, departement);
+            await _notificationService.SendBudgetDepartementUpdatedNotificationAsync(newBudgetDepartement.IdBudgetDepartement);
+            return MapToBudgetDepartementDto(newBudgetDepartement, departement);
         }
 
-        public async Task UpdateBudgetDepartementAsync(BudgetDepartement budgetDepartement)
+        public async Task UpdateBudgetDepartementAsync(BudgetDepartementDto budgetDepartement)
         {
             var existingBudget = await _unitOfWork.BudgetsDepartements.GetByIdAsync(budgetDepartement.IdBudgetDepartement);
             if (existingBudget == null)
                 throw new ArgumentException("Budget non trouvé");
 
-            budgetDepartement.DateCreation = existingBudget.DateCreation;
-            await _unitOfWork.BudgetsDepartements.UpdateAsync(budgetDepartement);
+            var changesBudgetDepartement = new BudgetDepartement
+            {
+                DateCreation = DateTime.Now,
+                DepartementId = budgetDepartement.DepartementId,
+                Annee = budgetDepartement.Annee,
+                MontantAnnuel = budgetDepartement.MontantAnnuel
+            };
+
+            await _unitOfWork.BudgetsDepartements.UpdateAsync(changesBudgetDepartement);
             await _unitOfWork.CompleteAsync();
 
             await _notificationService.SendBudgetDepartementUpdatedNotificationAsync(budgetDepartement.IdBudgetDepartement);

@@ -89,13 +89,6 @@ namespace FinanceManagement.Controllers
 
             var result = await userManager.CreateAsync(user, userDto.Password);
 
-            string mailBody = $"Welcome to our Platform! We're thrilled to have you on board.\r\n\r\n" +
-                             $"Here are your login credentials:\r\n\r\n" +
-                             $"Your Email: {userDto.Email}\r\n" +
-                             $"Password: {userDto.Password}\r\n\r\n" +
-                             $"Please log in using the link below and change your password to activate your account:\r\n\r\n" +
-                             $"[Application.com.tn]";
-
             if (result.Succeeded)
             {
                 var roleResult = await userManager.AddToRoleAsync(user, userDto.role);
@@ -108,7 +101,7 @@ namespace FinanceManagement.Controllers
                 var roles = await userManager.GetRolesAsync(user);
                 var token = GenerateToken(user, roles.ToList());
 
-                await _emailService.SendEmailAsync(userDto.Email, mailBody, userDto.Password);
+                // Email sending removed for testing purposes
 
                 return Ok(new
                 {
@@ -122,7 +115,7 @@ namespace FinanceManagement.Controllers
             return BadRequest(new { Message = "User creation failed", Errors = result.Errors });
         }
 
-        
+
         [HttpPost("Login")]
         public async Task<IActionResult> Login([FromBody] LoginModel model)
         {
@@ -170,7 +163,7 @@ namespace FinanceManagement.Controllers
         }
 
         [HttpPost("ChangePassword")]
-       // [Authorize] // Ensure the user is authenticated
+        // [Authorize] // Ensure the user is authenticated
         public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordDto model)
         {
             if (model == null || string.IsNullOrWhiteSpace(model.OldPassword) || string.IsNullOrWhiteSpace(model.NewPassword))
@@ -231,7 +224,7 @@ namespace FinanceManagement.Controllers
         }
 
         [HttpGet("user-info")]
-       // [Authorize]
+        // [Authorize]
         public async Task<ActionResult<UserDto>> GetCurrentUserInfo()
         {
             var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);

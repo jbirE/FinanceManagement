@@ -29,7 +29,12 @@ namespace FinanceManagement.Data.Dtos
         public string UtilisateurId { get; set; }
 
         public string UtilisateurNom { get; set; }
+        public enum StatutRapport : short
+    {
+        Approuve,
+        Rejete,
+        EnAttente
+    }
 
-        public List<FactureDTO> Factures { get; set; } = new List<FactureDTO>();
     }
 }

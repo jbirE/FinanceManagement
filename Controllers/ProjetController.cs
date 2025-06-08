@@ -1,16 +1,13 @@
-﻿using FinanceManagement.Data.Models;
-using FinanceManagement.Services;
-using Microsoft.AspNetCore.Authorization;
+﻿using FinanceManagement.Data.Dtos;
 using Microsoft.AspNetCore.Mvc;
+using FinanceManagement.Services;
 
 namespace FinanceManagement.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    [Authorize]
     public class ProjetController : ControllerBase
     {
-        //haka shih 
         private readonly ProjetService _projetService;
 
         public ProjetController(ProjetService projetService)
@@ -19,36 +16,34 @@ namespace FinanceManagement.Controllers
         }
 
         [HttpGet("GetAllProjets")]
-        public async Task<ActionResult<IEnumerable<Projet>>> GetAllProjets()
+        public async Task<ActionResult<IEnumerable<ProjetDto>>> GetAllProjets()
         {
             var projets = await _projetService.GetAllProjetsAsync();
             return Ok(projets);
         }
 
         [HttpGet("GetProjet/{id}")]
-        public async Task<ActionResult<Projet>> GetProjet(int id)
+        public async Task<ActionResult<ProjetDto>> GetProjet(int id)
         {
             var projet = await _projetService.GetProjetByIdAsync(id);
-
             if (projet == null)
                 return NotFound();
-
             return Ok(projet);
         }
 
         [HttpGet("GetProjetsByDepartement/{departementId}")]
-        public async Task<ActionResult<IEnumerable<Projet>>> GetProjetsByDepartement(int departementId)
+        public async Task<ActionResult<IEnumerable<ProjetDto>>> GetProjetsByDepartement(int departementId)
         {
             var projets = await _projetService.GetProjetsByDepartementAsync(departementId);
             return Ok(projets);
         }
 
         [HttpPost("CreateProjet")]
-        public async Task<ActionResult<Projet>> CreateProjet(Projet projet)
+        public async Task<ActionResult<ProjetDto>> CreateProjet([FromBody] ProjetDto projetDto)
         {
             try
             {
-                var createdProjet = await _projetService.CreateProjetAsync(projet);
+                var createdProjet = await _projetService.CreateProjetAsync(projetDto);
                 return CreatedAtAction(nameof(GetProjet), new { id = createdProjet.IdProjet }, createdProjet);
             }
             catch (ArgumentException ex)
@@ -58,14 +53,14 @@ namespace FinanceManagement.Controllers
         }
 
         [HttpPut("UpdateProjet/{id}")]
-        public async Task<IActionResult> UpdateProjet(int id, Projet projet)
+        public async Task<IActionResult> UpdateProjet(int id, [FromBody] ProjetDto projetDto)
         {
-            if (id != projet.IdProjet)
-                return BadRequest("ID mismatch");
-
             try
             {
-                await _projetService.UpdateProjetAsync(projet);
+                if (id != projetDto.IdProjet)
+                    return BadRequest("ID mismatch");
+
+                await _projetService.UpdateProjetAsync(projetDto);
                 return NoContent();
             }
             catch (ArgumentException ex)
@@ -93,4 +88,3 @@ namespace FinanceManagement.Controllers
         }
     }
 }
-

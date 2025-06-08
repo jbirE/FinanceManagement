@@ -27,8 +27,9 @@ public class RapportDepense
     public enum StatutRapport : short
     {
         approuve,
-        rejete,
-        enAttente
+        rejete, 
+        enTraitement, // manager va lancer l'etude du rapport depenses // l'employe ne peut pas modifier le rapport
+        soumis // peut modifier le repport 
 
     }
 }

@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using FinanceManagement.Data.Enum;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace FinanceManagement.Data.Models;
@@ -19,13 +20,4 @@ public class Notification
     public int EntityId { get; set; }
 
     public TypeNotification TypeEntityNotification {  get; set; }
-}
-
-public enum TypeNotification
-{
-    BudgetProjet,
-    RapportDepenses,
-    BudgetDepartement,
-    Projet
-
 }

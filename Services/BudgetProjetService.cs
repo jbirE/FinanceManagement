@@ -14,6 +14,7 @@ namespace FinanceManagement.Services
         private readonly NotificationService _notificationService;
         private readonly BudgetDepartementService _budgetDepartementService;
 
+        // NOT CHANGEABLE: Constructor remains unchanged as it defines dependencies
         public BudgetProjetService(
             IUnitOfWork unitOfWork,
             NotificationService notificationService,
@@ -24,6 +25,7 @@ namespace FinanceManagement.Services
             _budgetDepartementService = budgetDepartementService;
         }
 
+        // NOT CHANGEABLE: Returns BudgetProjetDto and is already aligned with your goal
         public async Task<IEnumerable<BudgetProjetDto>> GetAllBudgetsProjetsAsync()
         {
             var budgets = await _unitOfWork.BudgetsProjets.GetAllAsync();
@@ -38,6 +40,7 @@ namespace FinanceManagement.Services
             return result;
         }
 
+        // NOT CHANGEABLE: Returns BudgetProjetDto and is already aligned with your goal
         public async Task<BudgetProjetDto> GetBudgetProjetByIdAsync(int budgetProjetId)
         {
             var budget = await _unitOfWork.BudgetsProjets.GetByIdAsync(budgetProjetId);
@@ -48,6 +51,7 @@ namespace FinanceManagement.Services
             return await MapToBudgetProjetDtoAsync(budget, projet);
         }
 
+        // NOT CHANGEABLE: Returns BudgetProjetDto and is already aligned with your goal
         public async Task<IEnumerable<BudgetProjetDto>> GetBudgetsByProjetAsync(int projetId)
         {
             var budgets = await _unitOfWork.BudgetsProjets.GetBudgetsByProjetAsync(projetId);
@@ -62,24 +66,40 @@ namespace FinanceManagement.Services
             return result;
         }
 
+        // NOT CHANGEABLE: Internal logic, no DTO input/output changes needed
         public async Task<double> GetCurrentSpendingForProjetAsync(int projetId)
         {
             return await _unitOfWork.BudgetsProjets.GetCurrentSpendingForProjetAsync(projetId);
         }
 
+        // NOT CHANGEABLE: Internal logic, no DTO input/output changes needed
         public async Task<bool> IsBudgetOverspentAsync(int budgetProjetId)
         {
-            return await _unitOfWork.BudgetsProjets.IsBudgetOverspentAsync(budgetProjetId);
+            var isOverSpeending = await _unitOfWork.BudgetsProjets.IsBudgetOverspentAsync(budgetProjetId);
+
+            // envoyer norification pour informer le manager 
+            await _notificationService.SendBudgetApproachingLimitNotificationAsync(budgetProjetId, 80);
+
+            return isOverSpeending;
         }
 
-        public async Task<BudgetProjetDto> CreateBudgetProjetAsync(BudgetProjet budgetProjet)
+        // CHANGEABLE: Modified to accept BudgetProjetDto instead of BudgetProjet
+        public async Task<BudgetProjetDto> CreateBudgetProjetAsync(BudgetProjetDto budgetProjetDto)
         {
+            // Map DTO to model
+            var budgetProjet = new BudgetProjet
+            {
+                IdBudgetProjet = budgetProjetDto.IdBudgetProjet, // May be 0 for new budgets
+                MontantAlloue = budgetProjetDto.MontantAlloue,
+                DepensesTotales = 0, // Initialize to 0 as per original logic
+                ProjetId = budgetProjetDto.ProjetId,
+                UtilisateurId = budgetProjetDto.UtilisateurId,
+                DateCreation = DateTime.UtcNow // Set in service as per original logic
+            };
+
             var projet = await _unitOfWork.Projets.GetByIdAsync(budgetProjet.ProjetId);
             if (projet == null)
                 throw new ArgumentException("Projet n'existe pas");
-
-            budgetProjet.DepensesTotales = 0;
-            budgetProjet.DateCreation = DateTime.UtcNow;
 
             await _unitOfWork.BudgetsProjets.AddAsync(budgetProjet);
             await _unitOfWork.CompleteAsync();
@@ -88,20 +108,26 @@ namespace FinanceManagement.Services
             return await MapToBudgetProjetDtoAsync(budgetProjet, projet);
         }
 
-        public async Task UpdateBudgetProjetAsync(BudgetProjet budgetProjet)
+        // CHANGEABLE: Modified to accept BudgetProjetDto instead of BudgetProjet
+        public async Task UpdateBudgetProjetAsync(BudgetProjetDto budgetProjetDto)
         {
-            var existingBudget = await _unitOfWork.BudgetsProjets.GetByIdAsync(budgetProjet.IdBudgetProjet);
+            var existingBudget = await _unitOfWork.BudgetsProjets.GetByIdAsync(budgetProjetDto.IdBudgetProjet);
             if (existingBudget == null)
                 throw new ArgumentException("Budget non trouvé");
 
-            budgetProjet.ProjetId = existingBudget.ProjetId;
-            budgetProjet.UtilisateurId = existingBudget.UtilisateurId;
-            budgetProjet.DateCreation = existingBudget.DateCreation;
+            // Update only the fields that should be modified from DTO
+            existingBudget.MontantAlloue = budgetProjetDto.MontantAlloue;
+            // Preserve original fields as per original logic
+            existingBudget.ProjetId = existingBudget.ProjetId;
+            existingBudget.UtilisateurId = existingBudget.UtilisateurId;
+            existingBudget.DateCreation = existingBudget.DateCreation;
+            existingBudget.DepensesTotales = existingBudget.DepensesTotales;
 
-            await _unitOfWork.BudgetsProjets.UpdateAsync(budgetProjet);
+            await _unitOfWork.BudgetsProjets.UpdateAsync(existingBudget);
             await _unitOfWork.CompleteAsync();
         }
 
+        // NOT CHANGEABLE: No DTO input, internal logic remains intact
         public async Task DeleteBudgetProjetAsync(int budgetProjetId)
         {
             var budget = await _unitOfWork.BudgetsProjets.GetByIdAsync(budgetProjetId);
@@ -116,6 +142,7 @@ namespace FinanceManagement.Services
             await _unitOfWork.CompleteAsync();
         }
 
+        // NOT CHANGEABLE: No DTO input, complex business logic tied to models
         public async Task AjusterBudgetApresApprobation(int budgetProjetId, double montant)
         {
             if (montant <= 0)
@@ -129,7 +156,7 @@ namespace FinanceManagement.Services
 
             if (budgetProjet.DepensesTotales > budgetProjet.MontantAlloue)
             {
-                await _notificationService.SendBudgetOverspentNotificationAsync(budgetProjetId);
+                await _notificationService.SendBudgetApproachingLimitNotificationAsync(budgetProjetId, 80);
                 throw new InvalidOperationException($"Le budget du projet {budgetProjetId} est dépassé.");
             }
 
@@ -156,6 +183,7 @@ namespace FinanceManagement.Services
             await _notificationService.SendBudgetDepartementUpdatedNotificationAsync(budgetDepartement.IdBudgetDepartement);
         }
 
+        // NOT CHANGEABLE: Mapping logic already returns BudgetProjetDto, no changes needed
         private async Task<BudgetProjetDto> MapToBudgetProjetDtoAsync(BudgetProjet budget, Projet projet)
         {
             string utilisateurNom = budget.UtilisateurId;
@@ -169,7 +197,7 @@ namespace FinanceManagement.Services
                 MontantAlloue = budget.MontantAlloue,
                 DepensesTotales = budget.DepensesTotales,
                 DateCreation = budget.DateCreation,
-                DateFinProjet = projet?.DateFin ?? DateTime.MinValue, // Use Projet.DateFin
+                DateFinProjet = projet?.DateFin ?? DateTime.MinValue,
                 ProjetId = budget.ProjetId,
                 ProjetNom = projet?.Nom ?? "Inconnu",
                 UtilisateurId = budget.UtilisateurId,

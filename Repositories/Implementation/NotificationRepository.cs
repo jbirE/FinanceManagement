@@ -4,6 +4,7 @@ using FinanceManagement.Repositories.Interface;
 using Microsoft.EntityFrameworkCore;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Threading.Tasks;
 
 namespace FinanceManagement.Repositories.Implementation
@@ -73,6 +74,24 @@ namespace FinanceManagement.Repositories.Implementation
             {
                 _context.Notifications.Remove(notification);
             }
+        }
+
+        public async Task<int> CountAsync(Expression<Func<Notification, bool>> predicate)
+        {
+            return await _context.Notifications.CountAsync(predicate);
+        }
+
+        public async Task UpdateAsync(Notification notification)
+        {
+            _context.Notifications.Update(notification);
+            await Task.CompletedTask; 
+        }
+
+        public async Task<IEnumerable<Notification>> FindAsync(Expression<Func<Notification, bool>> predicate)
+        {
+            return await _context.Notifications
+                .Where(predicate)
+                .ToListAsync();
         }
     }
 }

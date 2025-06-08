@@ -5,7 +5,8 @@
         BudgetProjet,
         RapportDepenses,
         BudgetDepartement,
-        Projet
+        Projet,
+        Departement
 
     }
 }

@@ -13,6 +13,7 @@ namespace FinanceManagement.Repositories.Implementation
     {
         public ProjetRepository(DataContext context) : base(context) { }
 
+        // Existing methods...
         public async Task<Projet> GetByIdAsync(int projetId)
         {
             return await _context.Projets
@@ -38,6 +39,57 @@ namespace FinanceManagement.Repositories.Implementation
         {
             return await _context.Projets
                 .Where(p => p.DepartementId == departementId)
+                .ToListAsync();
+        }
+
+        // New methods for dashboard functionality
+
+        /// <summary>
+        /// Gets projects with their budgets for a specific department and year
+        /// </summary>
+        public async Task<IEnumerable<Projet>> GetByDepartmentWithBudgetsForYearAsync(int departementId, int annee)
+        {
+            return await _context.Projets
+                .Where(p => p.DepartementId == departementId)
+                .Include(p => p.BudgetsProjets
+                    .Where(bp => bp.DateCreation.Year == annee))
+                .Include(p => p.Departement)
+                .ToListAsync();
+        }
+
+        /// <summary>
+        /// Gets the total allocated amount and expenses for projects in a department for a specific year
+        /// </summary>
+        public async Task<(double TotalAlloue, double TotalDepenses)> GetDepartmentProjectsFinancialsAsync(int departementId, int annee)
+        {
+            var projets = await _context.Projets
+                .Where(p => p.DepartementId == departementId)
+                .Include(p => p.BudgetsProjets
+                    .Where(bp => bp.DateCreation.Year == annee))
+                .ToListAsync();
+
+            var totalAlloue = projets
+                .SelectMany(p => p.BudgetsProjets)
+                .Sum(bp => bp.MontantAlloue);
+
+            var totalDepenses = projets
+                .SelectMany(p => p.BudgetsProjets)
+                .Sum(bp => bp.DepensesTotales);
+
+            return (totalAlloue, totalDepenses);
+        }
+
+        /// <summary>
+        /// Gets projects with their monthly expenses for a specific year
+        /// </summary>
+        public async Task<IEnumerable<Projet>> GetProjectsWithMonthlyExpensesAsync(int departementId, int annee)
+        {
+            return await _context.Projets
+                .Where(p => p.DepartementId == departementId)
+                .Include(p => p.BudgetsProjets
+                    .Where(bp => bp.DateCreation.Year == annee))
+                .ThenInclude(bp => bp.Rapports
+                    .Where(rd => rd.DateSoumission.Year == annee))
                 .ToListAsync();
         }
     }

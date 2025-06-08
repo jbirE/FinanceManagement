@@ -49,7 +49,7 @@ namespace FinanceManagement.Controllers
 
 
         [HttpPost("CreateBudgetDepartement")]
-        public async Task<ActionResult<BudgetDepartementDto>> CreateBudgetDepartement(BudgetDepartement budgetDepartement)
+        public async Task<ActionResult<BudgetDepartementDto>> CreateBudgetDepartement(BudgetDepartementDto budgetDepartement)
         {
             try
             {
@@ -69,11 +69,12 @@ namespace FinanceManagement.Controllers
 
 
         [HttpPut("UpdateBudgetDepartement/{id}")]
-        public async Task<IActionResult> UpdateBudgetDepartement(int id, BudgetDepartement budgetDepartement)
+        public async Task<IActionResult> UpdateBudgetDepartement(int id, BudgetDepartementDto budgetDepartement)
         {
             if (id != budgetDepartement.IdBudgetDepartement)
                 return BadRequest("ID mismatch");
 
+            budgetDepartement.IdBudgetDepartement = id;
             try
             {
                 await _budgetService.UpdateBudgetDepartementAsync(budgetDepartement);

@@ -37,6 +37,7 @@ namespace FinanceManagement.Repositories.Implementation
             if (budget == null)
                 return false;
 
+
             return budget.DepensesTotales > budget.MontantAlloue;
         }
     }

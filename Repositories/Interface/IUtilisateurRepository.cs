@@ -6,6 +6,7 @@ namespace FinanceManagement.Repositories.Interface
     {
         Task<IEnumerable<Utilisateur>> GetAllAsync();
         Task<Utilisateur?> GetByIdAsync(string id);
+
         Task<IEnumerable<Utilisateur>> GetByDepartementIdAsync(int departementId);
         Task<IEnumerable<Utilisateur>> GetUsersByRoleAsync(string roleName);
         Task AddAsync(Utilisateur utilisateur);

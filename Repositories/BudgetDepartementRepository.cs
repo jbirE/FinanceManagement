@@ -22,15 +22,14 @@ namespace FinanceManagement.Repositories
         }
 
         // Override methods where interface signature differs from generic repository
-        public new async Task<BudgetDepartement> GetByIdAsync(int id)
+        public async Task<BudgetDepartement> GetByIdAsync(int id)
         {
             return await base.GetByIdAsync(id);
         }
 
-        public new async Task<IEnumerable<BudgetDepartement>> FindAsync(Func<BudgetDepartement, bool> predicate)
+        public async Task<IEnumerable<BudgetDepartement>> FindAsync(Expression<Func<BudgetDepartement, bool>> predicate)
         {
-            Expression<Func<BudgetDepartement, bool>> expression = x => predicate(x);
-            return await base.FindAsync(expression);
+            return await base.FindAsync(predicate);
         }
 
         public async Task<BudgetDepartement> GetCurrentBudgetForDepartementAsync(int departementId, int year)
